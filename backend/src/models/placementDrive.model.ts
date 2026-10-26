@@ -1,0 +1,106 @@
+
+import prisma from "../prisma.js";
+
+export const createPlacementDrive = async (data: {
+    role: string;
+    package: number;
+    eligibilityCriteria: string;
+    deadline: Date;
+    companyId: number;
+}) => {
+    return await prisma.placementDrive.create({
+        data: {
+            role: data.role,
+            package: data.package,
+            eligibilityCriteria: data.eligibilityCriteria,
+            deadline: data.deadline,
+            companyId: data.companyId
+        }
+    });
+};
+
+export const getPlacementDrives = async () => {
+  return await prisma.placementDrive.findMany({
+    include: {
+      company: true,
+    },
+  });
+};
+
+export const getPlacementDriveById=async(id:number)=>{
+    return await prisma.placementDrive.findUnique({
+        where:{
+            id:id
+        }
+    })
+}
+
+
+export const updatePlacementDrive = async (
+    id: number,
+    data: {
+        role: string;
+        package: number;
+        eligibilityCriteria: string;
+        deadline: Date;
+        companyId: number;
+    }
+) => {
+    return await prisma.placementDrive.update({
+        where: { id },
+        data: {
+            role: data.role,
+            package: data.package,
+            eligibilityCriteria: data.eligibilityCriteria,
+            deadline: data.deadline,
+            companyId: data.companyId
+        }
+    });
+};
+
+
+export const patchPlacementDrive = async (
+    id: number,
+    data: {
+        role?: string;
+        package?: number;
+        eligibilityCriteria?: string;
+        deadline?: Date;
+        companyId?: number;
+        status?:"OPEN"|"CLOSED"
+    }
+) => {
+    return await prisma.placementDrive.update({
+        where: { id },
+        data
+    });
+};
+
+
+export const deletePlacementDrive = async (id: number) => {
+    return await prisma.placementDrive.delete({
+        where: { id }
+    });
+};
+
+export const countDriveApplications = async (placementDriveId: number) => {
+  return prisma.application.count({
+    where: { placementDriveId },
+  });
+};
+
+
+export const getDriveEligibilityData = async (placementDriveId: number) => {
+  return prisma.placementDrive.findUnique({
+    where: { id: placementDriveId },
+    include: {
+      company: true,
+      applications: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+};
+

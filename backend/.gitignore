@@ -1,0 +1,13 @@
+node_modules/
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
