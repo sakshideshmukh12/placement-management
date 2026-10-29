@@ -16,11 +16,12 @@ import {
   TextField,
 } from "@mui/material";
 import { Formik, Form } from "formik";
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
 import FormikTextField from "../components/forms/FormikTextField";
 import FormikSelectField from "../components/forms/FormikSelectField";
 import FormikDateField from "../components/forms/FormikDateField";
 import { placementDriveValidationSchema } from "../validation/validationSchemas";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 interface Company {
   id: number;
@@ -74,8 +75,8 @@ export default function ManagePlacementDrives() {
 
     try {
       const [driveRes, companyRes] = await Promise.all([
-        axiosInstance.get<ApiResponse<Drive[]>>("/placement-drives"),
-        axiosInstance.get<ApiResponse<Company[]>>("/companies"),
+        apiClient.get<ApiResponse<Drive[]>>(API_ENDPOINTS_V1.PLACEMENT_DRIVES),
+        apiClient.get<ApiResponse<Company[]>>(API_ENDPOINTS_V1.COMPANIES),
       ]);
 
       setDrives(driveRes.data.data);
@@ -132,7 +133,7 @@ export default function ManagePlacementDrives() {
     setError("");
 
     try {
-      await axiosInstance.delete(`/placement-drives/${id}`);
+      await apiClient.delete(`${API_ENDPOINTS_V1.PLACEMENT_DRIVES}/${id}`); 
       await loadData();
     } catch (err) {
       const e = err as {
@@ -243,9 +244,8 @@ export default function ManagePlacementDrives() {
             </Box>
 
             <Chip
-              label={`${filteredDrives.length} ${
-                filteredDrives.length === 1 ? "Drive" : "Drives"
-              }`}
+              label={`${filteredDrives.length} ${filteredDrives.length === 1 ? "Drive" : "Drives"
+                }`}
               sx={{
                 bgcolor: "#e8f0fe",
                 color: "#1d4f91",
@@ -554,12 +554,12 @@ export default function ManagePlacementDrives() {
               };
 
               if (editingId !== null) {
-                await axiosInstance.put(
-                  `/placement-drives/${editingId}`,
+                  await apiClient.put(
+                  `${API_ENDPOINTS_V1.PLACEMENT_DRIVES}/${editingId}`,
                   payload
                 );
               } else {
-                await axiosInstance.post("/placement-drives", payload);
+                await apiClient.post(API_ENDPOINTS_V1.PLACEMENT_DRIVES, payload);
               }
 
               setOpen(false);
@@ -572,8 +572,8 @@ export default function ManagePlacementDrives() {
 
               setError(
                 e.response?.data?.message ||
-                  e.message ||
-                  "Failed to save drive."
+                e.message ||
+                "Failed to save drive."
               );
             } finally {
               setSubmitting(false);
@@ -618,7 +618,8 @@ export default function ManagePlacementDrives() {
                   <FormikTextField
                     name="eligibilityCriteria"
                     label="Eligibility Criteria"
-                    placeholder="Enter required skills, CGPA, branch, etc."
+                    placeholder="Branches: CSE, IT; Years: 4th Year"
+                    helperText="Format: Branches: CSE, IT; Years: 4th Year"
                     multiline
                     rows={3}
                     required

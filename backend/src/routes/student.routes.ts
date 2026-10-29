@@ -18,30 +18,31 @@ import { authorizeStudentAccess } from "../middleware/studentAccess.middleware.j
 import { studentQuerySchema } from "../dtos/student/student-query.dto.js";
 import { studentIdSchema } from "../dtos/student/student-id.dto.js";
 import { updateStudentSchema,replaceStudentSchema } from "../dtos/student/update-student.dto.js";
-
+import { UserRole } from "../constants/roles.js";
+import { API_ENDPOINTS_V1 } from "../constants/endpoints.js";
 const router = express.Router();
 
 // View all students: Admin and Placement Coordinator only
 router.get(
-  "/students",
+  API_ENDPOINTS_V1.STUDENTS.GET ,
   authenticate,
-  authorizeRoles("ADMIN", "PLACEMENT_COORDINATOR"),
+  authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(studentQuerySchema,"query"),
   getStudents
 );
 
 // Add a student: Admin and Placement Coordinator only
 router.post(
-  "/students",
+  API_ENDPOINTS_V1.STUDENTS.CREATE,
   authenticate,
-  authorizeRoles("ADMIN", "PLACEMENT_COORDINATOR"),
+  authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(createStudentSchema),
   addStudent
 );
 
 // View a student: Admin/Coordinator can view any; student can view their own
 router.get(
-  "/students/:id",
+  API_ENDPOINTS_V1.STUDENTS.GET_BY_ID,
   authenticate,
   authorizeStudentAccess,
   validate(studentIdSchema,"params"),
@@ -50,7 +51,7 @@ router.get(
 
 // Update a student: Admin/Coordinator can update any; student can access their own
 router.put(
-  "/students/:id",
+  API_ENDPOINTS_V1.STUDENTS.UPDATE,
   authenticate,
   validate(studentIdSchema,"params"),
   authorizeStudentAccess,
@@ -59,7 +60,7 @@ router.put(
 );
 
 router.patch(
-  "/students/:id",
+  API_ENDPOINTS_V1.STUDENTS.PATCH,
   authenticate,
   validate(studentIdSchema,"params"),
   authorizeStudentAccess,
@@ -69,10 +70,12 @@ router.patch(
 
 // Delete a student: Admin and Placement Coordinator only
 router.delete(
-  "/students/:id",
+  API_ENDPOINTS_V1.STUDENTS.DELETE,
   authenticate,
   validate(studentIdSchema,"params"),
-  authorizeRoles("ADMIN", "PLACEMENT_COORDINATOR"),
+  authenticate,
+  validate(studentIdSchema,"params"),
+    authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   deleteStudentById
 );
 

@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState,useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -18,7 +18,8 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import BusinessCenterOutlinedIcon from "@mui/icons-material/BusinessCenterOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type Company = {
   id: number;
@@ -64,6 +65,7 @@ type ApiError = {
 };
 
 function PlacementDrives() {
+  const hasFetchedRef = useRef(false);
   const navigate = useNavigate();
 
   const [drives, setDrives] = useState<PlacementDrive[]>([]);
@@ -80,8 +82,9 @@ function PlacementDrives() {
       setLoading(true);
       setError("");
 
-      const response =
-        await axiosInstance.get<PlacementDriveResponse>("/placement-drives");
+      const response = await apiClient.get<PlacementDriveResponse>(
+  API_ENDPOINTS_V1.PLACEMENT_DRIVES
+);
 
       setDrives(response.data.data);
     } catch (err) {
@@ -95,7 +98,7 @@ function PlacementDrives() {
   const loadMyApplications = async () => {
     try {
       const response =
-        await axiosInstance.get<ApplicationsResponse>("/applications");
+        await apiClient.get<ApplicationsResponse>(API_ENDPOINTS_V1.APPLICATIONS);
 
       const ids = response.data.data.map(
         (application) => application.placementDrive.id
@@ -108,9 +111,17 @@ function PlacementDrives() {
   };
 
   useEffect(() => {
-    void loadDrives();
-    void loadMyApplications();
-  }, []);
+  if (hasFetchedRef.current) {
+    return;
+  }
+
+  hasFetchedRef.current = true;
+
+  void loadDrives();
+  void loadMyApplications();
+}, []);
+
+
 
   const handleApply = async (driveId: number) => {
     if (applyingDriveId !== null || appliedDriveIds.includes(driveId)) {
@@ -122,7 +133,7 @@ function PlacementDrives() {
       setApplyError("");
       setSuccessMessage("");
 
-      const response = await axiosInstance.post("/applications", {
+      const response = await apiClient.post(API_ENDPOINTS_V1.APPLICATIONS, {
         placementDriveId: driveId,
       });
 

@@ -3,17 +3,16 @@ import prisma from "../prisma.js";
 import type { ApplicationStatus } from "../generated/prisma/client.js";
 
 export const createApplication = async (
-    userId: number,
-    placementDriveId: number
+  userId: number,
+  placementDriveId: number,
 ) => {
-    return await prisma.application.create({
-        data: {
-            userId,
-            placementDriveId
-        }
-    });
+  return await prisma.application.create({
+    data: {
+      userId,
+      placementDriveId,
+    },
+  });
 };
-
 
 export const getApplications = async (
   userId?: number,
@@ -62,8 +61,7 @@ export const getApplications = async (
                 },
               },
             },
-            ...(Number.isInteger(Number(search.trim())) &&
-            search.trim() !== ""
+            ...(Number.isInteger(Number(search.trim())) && search.trim() !== ""
               ? [{ id: Number(search.trim()) }]
               : []),
           ],
@@ -123,51 +121,47 @@ export const getApplications = async (
   };
 };
 
-
-
 export const updateApplicationStatus = async (
-    id: number,
-    status: ApplicationStatus
+  id: number,
+  status: ApplicationStatus,
 ) => {
-    return await prisma.application.update({
-        where: { id },
-        data: { status }
-    });
+  return await prisma.application.update({
+    where: { id },
+    data: { status },
+  });
 };
 
-export const findEligiblePlacementDrive = async (
-    placementDriveId: number
-) => {
-    const drive = await prisma.placementDrive.findUnique({
-        where: { id: placementDriveId }
-    });
+export const findEligiblePlacementDrive = async (placementDriveId: number) => {
+  const drive = await prisma.placementDrive.findUnique({
+    where: { id: placementDriveId },
+  });
 
-    if (!drive) {
-        return {
-            eligible: false,
-            reason: "Placement drive not found",
-            statusCode: 404
-        };
-    }
-
-    if (drive.status !== "OPEN") {
-        return {
-            eligible: false,
-            reason: "This placement drive is not open",
-            statusCode: 400
-        };
-    }
-
-    if (drive.deadline <= new Date()) {
-        return {
-            eligible: false,
-            reason: "The application deadline has passed",
-            statusCode: 400
-        };
-    }
-
+  if (!drive) {
     return {
-        eligible: true,
-        drive
+      eligible: false,
+      reason: "Placement drive not found",
+      statusCode: 404,
     };
+  }
+
+  if (drive.status !== "OPEN") {
+    return {
+      eligible: false,
+      reason: "This placement drive is not open",
+      statusCode: 400,
+    };
+  }
+
+  if (drive.deadline <= new Date()) {
+    return {
+      eligible: false,
+      reason: "The application deadline has passed",
+      statusCode: 400,
+    };
+  }
+
+  return {
+    eligible: true,
+    drive,
+  };
 };

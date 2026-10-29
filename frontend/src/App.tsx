@@ -23,6 +23,7 @@ import ManageApplications from "./pages/ManageApplications";
 import ManagePlacementDrives from "./pages/ManagePlacementDrives";
 import ManageInterviews from "./pages/ManageInterviews";
 import AddCompany from "./pages/AddCompany";
+import PlacementAnalytics from "../src/pages/PlacementAnalytics";
 
 import {
   Box,
@@ -109,34 +110,6 @@ function RequireRole({
   }
 
   return <>{children}</>;
-}
-
-// Placeholder for admin sections not yet implemented.
-function PlaceholderPage({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <Box>
-      <Typography
-        variant="h4"
-        sx={{ fontWeight: 750, color: "#172554", mb: 1 }}
-      >
-        {title}
-      </Typography>
-
-      <Typography sx={{ color: "#64748B", mb: 2 }}>
-        {description}
-      </Typography>
-
-      <Typography sx={{ color: "#64748B" }}>
-        This section is ready for implementation.
-      </Typography>
-    </Box>
-  );
 }
 
 // Admin dashboard with MUI management cards.
@@ -500,6 +473,20 @@ function App() {
             </RequireAuth>
           }
         />
+
+        <Route
+          path="/coordinator/analytics"
+          element={
+            <RequireAuth>
+              <RequireRole allowedRole="PLACEMENT_COORDINATOR">
+                <DashboardLayout>
+                  <PlacementAnalytics />
+                </DashboardLayout>
+              </RequireRole>
+            </RequireAuth>
+          }
+        />
+
 
 
         {/* Default route */}

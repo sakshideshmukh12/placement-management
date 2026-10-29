@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState,useRef } from "react";
 import {
   Alert,
   Avatar,
@@ -22,61 +22,29 @@ import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../app/hooks";
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
-type ApiListResponse<T> = {
-  message?: string;
-  data: T[] | { items?: T[]; applications?: T[]; interviews?: T[]; total?: number };
-  total?: number;
+type DashboardSummary = {
+  driveCount: number;
+  applicationCount: number;
+  interviewCount: number;
 };
 
-type PlacementDrive = {
-  id: number;
+type DashboardSummaryResponse = {
+  message: string;
+  data: DashboardSummary;
 };
-
-type Application = {
-  id: number;
-  studentId?: number;
-  userId?: number;
-};
-
-type Interview = {
-  id: number;
-  scheduledAt?: string;
-  scheduledDate?: string;
-  application?: {
-    studentId?: number;
-    userId?: number;
-    student?: { id?: number; userId?: number };
-  };
-};
-
-function getList<T>(response: ApiListResponse<T>): T[] {
-  if (Array.isArray(response.data)) {
-    return response.data;
-  }
-
-  const nested = response.data;
-  if (nested && "items" in nested && Array.isArray(nested.items)) {
-    return nested.items;
-  }
-  if (nested && "applications" in nested && Array.isArray(nested.applications)) {
-    return nested.applications;
-  }
-  if (nested && "interviews" in nested && Array.isArray(nested.interviews)) {
-    return nested.interviews;
-  }
-
-  return [];
-}
 
 function DashboardHome() {
+  const hasFetchedRef = useRef(false);
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
 
   const [driveCount, setDriveCount] = useState<number | null>(null);
   const [applicationCount, setApplicationCount] = useState<number | null>(null);
   const [interviewCount, setInterviewCount] = useState<number | null>(null);
+
   const [driveError, setDriveError] = useState("");
   const [applicationError, setApplicationError] = useState("");
   const [interviewError, setInterviewError] = useState("");
@@ -88,56 +56,38 @@ function DashboardHome() {
     setApplicationError("");
     setInterviewError("");
 
-    const results = await Promise.allSettled([
-      axiosInstance.get<ApiListResponse<PlacementDrive>>("/placement-drives"),
-      axiosInstance.get<ApiListResponse<Application>>("/applications"),
-      axiosInstance.get<ApiListResponse<Interview>>("/interviews"),
-    ]);
+    try {
+      const response =
+        await apiClient.get<DashboardSummaryResponse>(
+          API_ENDPOINTS_V1.DASHBOARD.SUMMARY
+        );
 
-    const [drivesResult, applicationsResult, interviewsResult] = results;
+      const summary = response.data.data;
 
-    if (drivesResult.status === "fulfilled") {
-      const drives = getList(drivesResult.value.data);
-      setDriveCount(drivesResult.value.data.total ?? drives.length);
-    } else {
-      console.error("Unable to load placement drives:", drivesResult.reason);
-      setDriveError("Placement drives could not be loaded.");
+      setDriveCount(summary.driveCount);
+      setApplicationCount(summary.applicationCount);
+      setInterviewCount(summary.interviewCount);
+    } catch (error) {
+      console.error("Unable to load dashboard summary:", error);
+
+      setDriveError("Dashboard summary could not be loaded.");
+
       setDriveCount(null);
-    }
-
-    if (applicationsResult.status === "fulfilled") {
-      const applications = getList(applicationsResult.value.data);
-      setApplicationCount(
-        applicationsResult.value.data.total ?? applications.length,
-      );
-    } else {
-      console.error("Unable to load applications:", applicationsResult.reason);
-      setApplicationError("Applications could not be loaded.");
       setApplicationCount(null);
-    }
-
-    if (interviewsResult.status === "fulfilled") {
-      const interviews = getList(interviewsResult.value.data);
-      const now = new Date();
-
-      const upcoming = interviews.filter((interview) => {
-        const date = interview.scheduledAt ?? interview.scheduledDate;
-        return date ? new Date(date).getTime() >= now.getTime() : false;
-      });
-
-      setInterviewCount(upcoming.length);
-    } else {
-      console.error("Unable to load interviews:", interviewsResult.reason);
-      setInterviewError("Interviews could not be loaded.");
       setInterviewCount(null);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    void fetchDashboardData();
-  }, [fetchDashboardData]);
+useEffect(() => {
+  if (hasFetchedRef.current) {
+    return;
+  }
+
+  hasFetchedRef.current = true;
+  void fetchDashboardData();
+}, [fetchDashboardData]);
 
   const firstName =
     user?.name?.trim().split(/\s+/)[0] ||
@@ -177,7 +127,11 @@ function DashboardHome() {
     },
   ];
 
-  const errors = [driveError, applicationError, interviewError].filter(Boolean);
+  const errors = [
+    driveError,
+    applicationError,
+    interviewError,
+  ].filter(Boolean);
 
   return (
     <Box sx={{ width: "100%", maxWidth: 1440, mx: "auto" }}>
@@ -205,6 +159,7 @@ function DashboardHome() {
             top: -110,
           }}
         />
+
         <Box
           aria-hidden="true"
           sx={{
@@ -245,7 +200,14 @@ function DashboardHome() {
             Welcome back, {firstName}!
           </Typography>
 
-          <Typography sx={{ mt: 1.5, maxWidth: 620, color: "#DBEAFE", lineHeight: 1.8 }}>
+          <Typography
+            sx={{
+              mt: 1.5,
+              maxWidth: 620,
+              color: "#DBEAFE",
+              lineHeight: 1.8,
+            }}
+          >
             Your next career opportunity could be one application away.
             Explore placement drives and keep your profile ready.
           </Typography>
@@ -272,6 +234,7 @@ function DashboardHome() {
             >
               Explore Placement Drives
             </Button>
+
             <Button
               variant="outlined"
               onClick={() => navigate("/profile")}
@@ -316,10 +279,15 @@ function DashboardHome() {
           >
             Your Placement Overview
           </Typography>
-          <Typography variant="body2" sx={{ color: "#64748B", mt: 0.7 }}>
+
+          <Typography
+            variant="body2"
+            sx={{ color: "#64748B", mt: 0.7 }}
+          >
             A quick look at your placement journey.
           </Typography>
         </Box>
+
         <Chip
           icon={<TrendingUpRoundedIcon />}
           label="Career progress"
@@ -390,12 +358,26 @@ function DashboardHome() {
                 }}
               >
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ color: "#64748B", fontWeight: 600 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#64748B", fontWeight: 600 }}
+                  >
                     {item.title}
                   </Typography>
-                  <Box sx={{ mt: 1.5, minHeight: 46, display: "flex", alignItems: "center" }}>
+
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      minHeight: 46,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     {loading && item.count === null ? (
-                      <CircularProgress size={28} aria-label={`Loading ${item.title}`} />
+                      <CircularProgress
+                        size={28}
+                        aria-label={`Loading ${item.title}`}
+                      />
                     ) : (
                       <Typography
                         variant="h3"
@@ -411,6 +393,7 @@ function DashboardHome() {
                     )}
                   </Box>
                 </Box>
+
                 <Avatar
                   variant="rounded"
                   sx={{
@@ -428,7 +411,12 @@ function DashboardHome() {
 
               <Typography
                 variant="body2"
-                sx={{ color: "#64748B", mt: 1.5, minHeight: 20, lineHeight: 1.6 }}
+                sx={{
+                  color: "#64748B",
+                  mt: 1.5,
+                  minHeight: 20,
+                  lineHeight: 1.6,
+                }}
               >
                 {item.description}
               </Typography>
@@ -442,7 +430,10 @@ function DashboardHome() {
                   color: item.color,
                   fontWeight: 700,
                   textTransform: "none",
-                  "&:hover": { bgcolor: "transparent", opacity: 0.8 },
+                  "&:hover": {
+                    bgcolor: "transparent",
+                    opacity: 0.8,
+                  },
                 }}
               >
                 View details
@@ -462,14 +453,26 @@ function DashboardHome() {
         }}
       >
         <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 2,
+            }}
+          >
             <Box sx={{ minWidth: 0 }}>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 800, color: "#172554", fontSize: { xs: "1.05rem", sm: "1.25rem" } }}
+                sx={{
+                  fontWeight: 800,
+                  color: "#172554",
+                  fontSize: { xs: "1.05rem", sm: "1.25rem" },
+                }}
               >
                 Make the most of your placement journey
               </Typography>
+
               <Typography
                 variant="body2"
                 sx={{ color: "#64748B", mt: 1, lineHeight: 1.8 }}
@@ -478,14 +481,21 @@ function DashboardHome() {
                 before applying, and review your applications regularly so you
                 don't miss important placement updates.
               </Typography>
+
               <Button
                 variant="outlined"
                 onClick={() => navigate("/profile")}
-                sx={{ mt: 2.5, borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+                sx={{
+                  mt: 2.5,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 700,
+                }}
               >
                 Review profile
               </Button>
             </Box>
+
             <Box
               sx={{
                 display: { xs: "none", sm: "flex" },

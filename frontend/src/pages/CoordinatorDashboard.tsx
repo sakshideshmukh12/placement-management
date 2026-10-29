@@ -15,6 +15,7 @@ import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 
 function CoordinatorDashboard() {
   const cards = [
@@ -63,6 +64,16 @@ function CoordinatorDashboard() {
   color: "#0891B2",
   background: "#CFFAFE",
 },
+{
+  title: "Placement Analytics",
+  description: "View placement statistics, application statuses, and drive performance.",
+  link: "/coordinator/analytics",
+  button: "View Analytics",
+  icon: <AnalyticsOutlinedIcon />,
+  color: "#4F46E5",
+  background: "#E0E7FF",
+},
+
  
   ];
 

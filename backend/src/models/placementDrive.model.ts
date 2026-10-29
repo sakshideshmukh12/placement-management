@@ -104,3 +104,103 @@ export const getDriveEligibilityData = async (placementDriveId: number) => {
   });
 };
 
+export const getPlacementAnalytics = async () => {
+  const [
+    totalDrives,
+    openDrives,
+    closedDrives,
+    totalApplications,
+    shortlistedApplications,
+    selectedApplications,
+    rejectedApplications,
+    appliedApplications,
+    totalStudents,
+    placedStudents,
+  ] = await Promise.all([
+    prisma.placementDrive.count(),
+
+    prisma.placementDrive.count({
+      where: { status: "OPEN" },
+    }),
+
+    prisma.placementDrive.count({
+      where: { status: "CLOSED" },
+    }),
+
+    prisma.application.count(),
+
+    prisma.application.count({
+      where: { status: "SHORTLISTED" },
+    }),
+
+    prisma.application.count({
+      where: { status: "SELECTED" },
+    }),
+
+    prisma.application.count({
+      where: { status: "REJECTED" },
+    }),
+
+    prisma.application.count({
+      where: { status: "APPLIED" },
+    }),
+
+    prisma.user.count({
+      where: { role: "STUDENT", isActive: true },
+    }),
+
+    prisma.user.count({
+      where: {
+        role: "STUDENT",
+        isActive: true,
+        applications: {
+          some: { status: "SELECTED" },
+        },
+      },
+    }),
+  ]);
+
+  const selectionRate =
+    totalApplications > 0
+      ? Number(((selectedApplications / totalApplications) * 100).toFixed(2))
+      : 0;
+
+  const placementRate =
+    totalStudents > 0
+      ? Number(((placedStudents / totalStudents) * 100).toFixed(2))
+      : 0;
+
+  return {
+    drives: {
+      total: totalDrives,
+      open: openDrives,
+      closed: closedDrives,
+    },
+    applications: {
+      total: totalApplications,
+      applied: appliedApplications,
+      shortlisted: shortlistedApplications,
+      selected: selectedApplications,
+      rejected: rejectedApplications,
+    },
+    students: {
+      total: totalStudents,
+      placed: placedStudents,
+      notPlaced: totalStudents - placedStudents,
+    },
+    rates: {
+      selectionRate,
+      placementRate,
+    },
+    applicationStatusChart: [
+      { status: "Applied", count: appliedApplications },
+      { status: "Shortlisted", count: shortlistedApplications },
+      { status: "Selected", count: selectedApplications },
+      { status: "Rejected", count: rejectedApplications },
+    ],
+    driveStatusChart: [
+      { status: "Open", count: openDrives },
+      { status: "Closed", count: closedDrives },
+    ],
+  };
+};

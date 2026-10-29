@@ -28,8 +28,9 @@ import type {
   GridSortModel,
 } from "@mui/x-data-grid";
 
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
 import ReusableDataGrid from "../components/commmon/ReusableDataGrid";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 interface Student {
   id: number;
@@ -140,8 +141,8 @@ export default function ManageStudents() {
       const sortOrder =
         currentSort?.sort === "desc" ? "desc" : "asc";
 
-      const response = await axiosInstance.get<StudentsResponse>(
-        "/students",
+      const response = await apiClient.get<StudentsResponse>(
+        API_ENDPOINTS_V1.STUDENTS,
         {
           params: {
             page: paginationModel.page + 1,

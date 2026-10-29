@@ -1,3 +1,4 @@
+
 import {
   Box,
   Drawer,
@@ -14,10 +15,11 @@ import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import PeopleOutlineRoundedIcon from "@mui/icons-material/PeopleOutlineRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
-import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded"
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink} from "react-router-dom";
 
 const drawerWidth = 260;
 
@@ -51,7 +53,6 @@ function SideNav({
   mobileOpen = false,
   onClose,
 }: SideNavProps) {
-  const location = useLocation();
   const role = getSavedRole();
 
   const isAdmin = role === "ADMIN";
@@ -113,10 +114,15 @@ function SideNav({
             icon: <EventAvailableRoundedIcon />,
           },
           {
-  label: "Add Company",
-  path: "/coordinator/companies",
-  icon: <BusinessOutlinedIcon />,
-},
+            label: "Add Company",
+            path: "/coordinator/companies",
+            icon: <BusinessOutlinedIcon />,
+          },
+          {
+            label: "Placement Analytics",
+            path: "/coordinator/analytics",
+            icon: <AnalyticsOutlinedIcon />,
+          },
         ]
       : [
           {

@@ -6,6 +6,9 @@ import {
 } from "react-router-dom";
 import { useAppDispatch } from "./app/hooks";
 import { setCredentials } from "./features/auth/authSlice";
+import { apiClient } from "./api/client";
+import { API_ENDPOINTS_V1 } from "./utils/constants";
+
 
 import {
     Alert,
@@ -99,34 +102,24 @@ export default function Login() {
 
         setLoading(true);
 
+
         try {
-            const response = await fetch("http://localhost:3000/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-            });
+            const response = await apiClient.post<LoginResponse>(
+                API_ENDPOINTS_V1.LOGIN,
+                { email, password }
+            );
 
-            const result: LoginResponse = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    result.message ||
-                    result.error ||
-                    "Login failed. Please try again.",
-                );
-            }
+            const result = response.data;
 
             if (!result.token || !result.user) {
                 throw new Error(
-                    "Login response is missing the token or user details. Check the backend response.",
+                    "Login response is missing the token or user details. Check the backend response."
                 );
             }
 
             if (result.user.isActive === false) {
                 throw new Error(
-                    "Your account is inactive. Please contact your administrator.",
+                    "Your account is inactive. Please contact your administrator."
                 );
             }
 
@@ -140,8 +133,11 @@ export default function Login() {
                 setCredentials({
                     token: result.token,
                     user,
-                }),
+                })
             );
+
+            // Keep your existing code after dispatch here.
+
             if (user.role === "ADMIN") {
                 navigate("/admin-dashboard", { replace: true });
             } else if (user.role === "PLACEMENT_COORDINATOR") {

@@ -11,8 +11,9 @@ import {
 } from "@mui/material";
 import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
 import FormikTextField from "../components/forms/FormikTextField";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 interface CompanyFormValues {
     name: string;
@@ -71,7 +72,7 @@ export default function AddCompany() {
                             setSuccess("");
 
                             try {
-                                await axiosInstance.post("/companies", {
+                                await apiClient.post(API_ENDPOINTS_V1.COMPANIES, {
                                     name: values.name.trim(),
                                     website: values.website.trim()
                                         ? /^https?:\/\//i.test(values.website.trim())

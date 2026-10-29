@@ -10,6 +10,20 @@ const errorMiddleware = (
 ) => {
     console.error("Error:", err);
 
+    // Handle JSON body-size limit errors
+    if (
+        typeof err === "object" &&
+        err !== null &&
+        "type" in err &&
+        err.type === "entity.too.large"
+    ) {
+        res.status(413).json({
+            message: "Request body is too large. Please reduce the payload size."
+        });
+        return;
+    }
+
+    // Handle Prisma database errors
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
         switch (err.code) {
             case "P2002":

@@ -17,15 +17,17 @@ import { authorizeRoles } from "../middleware/authorize.middleware.js";
 import { createCompanySchema } from "../dtos/company/create-company.dto.js";
 import { updateCompanySchema } from "../dtos/company/update-company.dto.js";
 import { studentIdSchema } from "../dtos/student/student-id.dto.js";
+import { UserRole } from "../constants/roles.js";
+import { API_ENDPOINTS_V1 } from "../constants/endpoints.js"; 
 
 
 
 const router = Router();
 
 router.post(
-  "/companies",
+  API_ENDPOINTS_V1.COMPANIES.CREATE   ,
   authenticate,
-  authorizeRoles("ADMIN","PLACEMENT_COORDINATOR"),
+  authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(createCompanySchema),
   addCompany,
 );
@@ -33,34 +35,34 @@ router.post(
 router.get("/companies", authenticate, fetchCompanies);
 
 router.put(
-  "/companies/:id",
+  API_ENDPOINTS_V1.COMPANIES.UPDATE,
   authenticate,
-   authorizeRoles("ADMIN","PLACEMENT_COORDINATOR"),
+   authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(studentIdSchema, "params"),
   validate(createCompanySchema),
   editComapny,
 );
 
 router.patch(
-  "/companies/:id",
+  API_ENDPOINTS_V1.COMPANIES.UPDATE,
   authenticate,
-   authorizeRoles("ADMIN","PLACEMENT_COORDINATOR"),
+   authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(studentIdSchema, "params"),
   validate(updateCompanySchema),
   partialUpdateCompany,
 );
 
 router.get(
-  "/companies/:id",
+  API_ENDPOINTS_V1.COMPANIES.GET,
   authenticate,
   validate(studentIdSchema, "params"),
   fetchCompanyById,
 );
 
 router.delete(
-  "/companies/:id",
+  API_ENDPOINTS_V1.COMPANIES.DELETE,
   authenticate,
-   authorizeRoles("ADMIN","PLACEMENT_COORDINATOR"),
+   authorizeRoles(UserRole.ADMIN, UserRole.PLACEMENT_COORDINATOR),
   validate(studentIdSchema, "params"),
   removeCompany,
 );

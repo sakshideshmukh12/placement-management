@@ -19,7 +19,8 @@ import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type ApplicationStatus =
   | "APPLIED"
@@ -131,7 +132,7 @@ function MyApplications() {
 
     try {
       const response =
-        await axiosInstance.get<ApplicationsResponse>("/applications");
+        await apiClient.get<ApplicationsResponse>(API_ENDPOINTS_V1.APPLICATIONS);
 
       if (Array.isArray(response.data?.data)) {
         setApplications(response.data.data);

@@ -107,22 +107,24 @@ export const login = async (
       { expiresIn: "1d", algorithm: "HS256" },
     );
 
-    res.status(200).json({
-      statusCode: 200,
-      message: "Login successful",
-      token,
-      tokenType: "Bearer",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        rollNumber: user.rollNumber,
-        branch: user.branch,
-        year: user.year,
-      },
-    });
+    
+res.status(200).json({
+  statusCode: 200,
+  token,
+  expiresIn: "1d",
+  tokenType: "Bearer",
+  user: {
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    ...(user.role === "STUDENT" && {
+      rollNumber: user.rollNumber,
+      branch: user.branch,
+      year: user.year,
+    }),
+  },
+});
   } catch (error: unknown) {
     next(error);
   }

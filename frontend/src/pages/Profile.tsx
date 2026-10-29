@@ -1,4 +1,10 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent
+} from "react";
 import { useNavigate } from "react-router-dom";
 
 import Alert from "@mui/material/Alert";
@@ -9,6 +15,9 @@ import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+
+import { apiClient } from "../api/client";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type UserProfile = {
   id: number;
@@ -52,7 +61,7 @@ const emptyForm: ProfileForm = {
   pincode: "",
 };
 
-const toForm = (user: UserProfile): ProfileForm => ({
+const mapUserToForm = (user: UserProfile): ProfileForm => ({
   name: user.name ?? "",
   phone: user.phone ?? "",
   gender: user.gender ?? "",
@@ -84,38 +93,41 @@ export default function Profile() {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch("http://localhost:3000/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await apiClient.get<ProfileResponse>(
+          API_ENDPOINTS_V1.AUTH_ME
+        );
 
-        const result: ProfileResponse = await response.json();
+        const result = response.data;
 
-        if (response.status === 401) {
+        if (!result.user) {
+          throw new Error("Profile data was not returned by the server.");
+        }
+
+        setUser(result.user);
+        setForm(mapUserToForm(result.user));
+      } catch (err: unknown) {
+        const status =
+          typeof err === "object" &&
+          err !== null &&
+          "response" in err
+            ? (
+                err as {
+                  response?: { status?: number };
+                }
+              ).response?.status
+            : undefined;
+
+        if (status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           navigate("/login", { replace: true });
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(result.message || "Unable to load your profile.");
-        }
-
-        if (!result.user) {
-          throw new Error("The server did not return your profile.");
-        }
-
-        setUser(result.user);
-        setForm(toForm(result.user));
-      } catch (err: unknown) {
         setError(
           err instanceof Error
-            ? err.message === "Failed to fetch"
-              ? "Cannot connect to the backend. Check that your server is running."
-              : err.message
-            : "Unable to load your profile.",
+            ? err.message
+            : "Unable to load your profile."
         );
       } finally {
         setLoading(false);
@@ -126,7 +138,7 @@ export default function Profile() {
   }, [navigate]);
 
   const handleChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = event.target;
 
@@ -159,13 +171,9 @@ export default function Profile() {
     setSaving(true);
 
     try {
-      const response = await fetch("http://localhost:3000/auth/me", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const response = await apiClient.patch<ProfileResponse>(
+        API_ENDPOINTS_V1.AUTH_ME,
+        {
           name: form.name.trim(),
           phone: form.phone.trim() || null,
           gender: form.gender || null,
@@ -173,47 +181,59 @@ export default function Profile() {
           city: form.city.trim() || null,
           state: form.state.trim() || null,
           pincode: form.pincode.trim() || null,
-        }),
-      });
+        }
+      );
 
-      const result: ProfileResponse = await response.json();
+      const result = response.data;
 
-      if (response.status === 401) {
+      if (!result.user) {
+        throw new Error("Updated profile data was not returned.");
+      }
+
+      setUser(result.user);
+      setForm(mapUserToForm(result.user));
+      setSuccess(result.message || "Profile updated successfully.");
+
+      const cachedUserText = localStorage.getItem("user");
+
+      if (cachedUserText) {
+        try {
+          const cachedUser = JSON.parse(cachedUserText);
+
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...cachedUser,
+              name: result.user.name,
+            })
+          );
+        } catch {
+          // Ignore invalid cached JSON.
+        }
+      }
+    } catch (err: unknown) {
+      const status =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err
+          ? (
+              err as {
+                response?: { status?: number };
+              }
+            ).response?.status
+          : undefined;
+
+      if (status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login", { replace: true });
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(result.message || "Unable to save your profile.");
-      }
-
-      if (!result.user) {
-        throw new Error("The server did not return the updated profile.");
-      }
-
-      setUser(result.user);
-      setForm(toForm(result.user));
-      setSuccess(result.message || "Your profile was updated successfully.");
-
-      // Keep the locally cached account name in sync if it exists.
-      const cachedUserText = localStorage.getItem("user");
-
-      if (cachedUserText) {
-        try {
-          const cachedUser = JSON.parse(cachedUserText);
-          localStorage.setItem(
-            "user",
-            JSON.stringify({ ...cachedUser, name: result.user.name }),
-          );
-        } catch {
-          // The profile itself has already been saved successfully.
-        }
-      }
-    } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Unable to save your profile.",
+        err instanceof Error
+          ? err.message
+          : "Unable to save your profile."
       );
     } finally {
       setSaving(false);
@@ -236,13 +256,22 @@ export default function Profile() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f4f6fb", p: { xs: 2, md: 5 } }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#f4f6fb",
+        p: { xs: 2, md: 5 },
+      }}
+    >
       <Box sx={{ maxWidth: 850, mx: "auto" }}>
         <Button onClick={() => navigate("/dashboard")} sx={{ mb: 2 }}>
           ← Back to Dashboard
         </Button>
 
-        <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}
+        >
           <Typography
             variant="h4"
             component="h1"
@@ -252,7 +281,7 @@ export default function Profile() {
           </Typography>
 
           <Typography color="text.secondary" sx={{ mb: 3 }}>
-            View your account information and update your personal details.
+            View your student information and update your personal details.
           </Typography>
 
           {error && (
@@ -272,7 +301,10 @@ export default function Profile() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "1fr 1fr",
+                  },
                   gap: 2,
                   mb: 3,
                 }}
@@ -307,14 +339,20 @@ export default function Profile() {
               </Box>
 
               <Box component="form" onSubmit={handleSubmit}>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, mb: 2 }}
+                >
                   Personal Details
                 </Typography>
 
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "1fr 1fr",
+                    },
                     gap: 2,
                   }}
                 >
@@ -355,7 +393,9 @@ export default function Profile() {
                     type="date"
                     value={form.dateOfBirth}
                     onChange={handleChange}
-                    slotProps={{ inputLabel: { shrink: true } }}
+                    slotProps={{
+                      inputLabel: { shrink: true },
+                    }}
                     fullWidth
                   />
 

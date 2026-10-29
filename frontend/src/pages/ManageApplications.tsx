@@ -17,14 +17,14 @@ import {
 
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import {API_ENDPOINTS_V1} from "../utils/constants";
 
 import type {
   GridColDef,
   GridPaginationModel,
   GridSortModel,
 } from "@mui/x-data-grid";
-
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
 import ReusableDataGrid from "../components/commmon/ReusableDataGrid";
 
 interface Student {
@@ -131,8 +131,8 @@ export default function ManageApplications() {
 
     try {
       const response =
-        await axiosInstance.get<ApplicationApiResponse>(
-          "/applications",
+        await apiClient.get<ApplicationApiResponse>(
+          API_ENDPOINTS_V1.APPLICATIONS,
           {
             params: {
               page: paginationModel.page + 1,
@@ -180,8 +180,8 @@ export default function ManageApplications() {
     setError("");
 
     try {
-      await axiosInstance.patch(
-        `/applications/${applicationId}`,
+      await apiClient.patch(
+        `${API_ENDPOINTS_V1.APPLICATIONS}/${applicationId}`,
         { status }
       );
 

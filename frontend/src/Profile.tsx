@@ -14,6 +14,10 @@ import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import {API_ENDPOINTS_V1} from "./utils/constants"; // Import the API endpoints
+
+// Shared Axios client
+import { apiClient } from "./api/client";
 
 type UserProfile = {
   id: number;
@@ -89,29 +93,11 @@ export default function Profile() {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:3000/auth/me",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        // The shared Axios client attaches the token automatically.
+        const response =
+          await apiClient.get<ProfileResponse>(API_ENDPOINTS_V1.AUTH_ME);
 
-        const result: ProfileResponse = await response.json();
-
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            result.message || "Unable to load your profile.",
-          );
-        }
+        const result = response.data;
 
         if (!result.user) {
           throw new Error("Profile data was not returned by the server.");
@@ -120,11 +106,28 @@ export default function Profile() {
         setUser(result.user);
         setForm(mapUserToForm(result.user));
       } catch (err: unknown) {
+        // Axios rejects requests with unsuccessful HTTP status codes.
+        const status =
+          typeof err === "object" &&
+          err !== null &&
+          "response" in err
+            ? (
+                err as {
+                  response?: { status?: number };
+                }
+              ).response?.status
+            : undefined;
+
+        if (status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login", { replace: true });
+          return;
+        }
+
         setError(
           err instanceof Error
-            ? err.message === "Failed to fetch"
-              ? "Cannot connect to the backend. Check that your server is running."
-              : err.message
+            ? err.message
             : "Unable to load your profile.",
         );
       } finally {
@@ -169,40 +172,21 @@ export default function Profile() {
     setSaving(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:3000/auth/me",
+      // Use the shared Axios client instead of fetch().
+      const response = await apiClient.patch<ProfileResponse>(
+        API_ENDPOINTS_V1.AUTH_ME,
         {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            phone: form.phone.trim() || null,
-            gender: form.gender || null,
-            dateOfBirth: form.dateOfBirth || null,
-            city: form.city.trim() || null,
-            state: form.state.trim() || null,
-            pincode: form.pincode.trim() || null,
-          }),
+          name: form.name.trim(),
+          phone: form.phone.trim() || null,
+          gender: form.gender || null,
+          dateOfBirth: form.dateOfBirth || null,
+          city: form.city.trim() || null,
+          state: form.state.trim() || null,
+          pincode: form.pincode.trim() || null,
         },
       );
 
-      const result: ProfileResponse = await response.json();
-
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login", { replace: true });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || "Unable to save your profile.",
-        );
-      }
+      const result = response.data;
 
       if (!result.user) {
         throw new Error("Updated profile data was not returned.");
@@ -212,7 +196,7 @@ export default function Profile() {
       setForm(mapUserToForm(result.user));
       setSuccess(result.message || "Profile updated successfully.");
 
-      // Update the cached name if the application stores a user object.
+      // Update the cached user name if a user object is stored.
       const cachedUserText = localStorage.getItem("user");
 
       if (cachedUserText) {
@@ -227,10 +211,28 @@ export default function Profile() {
             }),
           );
         } catch {
-          // The server update has already succeeded.
+          // The profile update succeeded; ignore invalid cached JSON.
         }
       }
     } catch (err: unknown) {
+      const status =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err
+          ? (
+              err as {
+                response?: { status?: number };
+              }
+            ).response?.status
+          : undefined;
+
+      if (status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login", { replace: true });
+        return;
+      }
+
       setError(
         err instanceof Error
           ? err.message

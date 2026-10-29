@@ -20,7 +20,8 @@ import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import VideocamRoundedIcon from "@mui/icons-material/VideocamRounded";
 
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type InterviewStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
@@ -39,9 +40,10 @@ interface InterviewApiItem {
       email: string;
       rollNumber: string;
       branch: string;
-      year: number;
+      year: string | number;
     };
     placementDrive: {
+      role: string;
       company: {
         name: string;
       };
@@ -99,35 +101,6 @@ function getRole(drive: Record<string, unknown>) {
   return "Placement Opportunity";
 }
 
-function getCurrentUserId(): number | null {
-  // Update this function to match the user object stored by your login flow.
-  const possibleKeys = ["user", "loggedInUser", "currentUser"];
-
-  for (const key of possibleKeys) {
-    const rawValue = localStorage.getItem(key);
-
-    if (!rawValue) continue;
-
-    try {
-      const parsed = JSON.parse(rawValue) as {
-        id?: number | string;
-        user?: { id?: number | string };
-      };
-
-      const id = parsed.user?.id ?? parsed.id;
-      const numericId = Number(id);
-
-      if (Number.isInteger(numericId) && numericId > 0) {
-        return numericId;
-      }
-    } catch {
-      // Ignore values that are not JSON.
-    }
-  }
-
-  return null;
-}
-
 function Interviews() {
   const [filter, setFilter] = useState("ALL");
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -135,74 +108,63 @@ function Interviews() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let active = true;
+  let active = true;
 
-    const fetchInterviews = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const fetchInterviews = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const response =
-          await axiosInstance.get<ApiResponse>("/interviews");
+      const response =
+        await apiClient.get<ApiResponse>(API_ENDPOINTS_V1.INTERVIEWS);
 
-        if (!active) return;
+      if (!active) return;
 
-        const currentUserId = getCurrentUserId();
+      const mappedInterviews: Interview[] = response.data.data.map(
+        (item) => {
+          const drive = item.application.placementDrive;
 
-        if (currentUserId === null) {
-          setInterviews([]);
-          setError(
-            "Unable to identify the logged-in student. Please check your login user storage."
-          );
-          return;
+          return {
+            id: item.id,
+            company: drive.company.name,
+            role: getRole(drive),
+            round: item.round,
+            date: item.scheduledAt,
+            time: formatTime(item.scheduledAt),
+            mode: item.mode,
+            location:
+              item.meetingLink ||
+              (item.mode === "ONLINE"
+                ? "Online meeting"
+                : "Venue not specified"),
+            meetingLink: item.meetingLink,
+            status: item.status,
+            feedback: item.feedback,
+            studentId: item.application.user.id,
+          };
         }
+      );
 
-        const mappedInterviews: Interview[] = response.data.data
-          .filter(
-            (item) => item.application.user.id === currentUserId
-          )
-          .map((item) => {
-            const drive = item.application.placementDrive;
+      setInterviews(mappedInterviews);
+    } catch (err) {
+      console.error("Failed to fetch interviews:", err);
 
-            return {
-              id: item.id,
-              company: drive.company.name,
-              role: getRole(drive),
-              round: item.round,
-              date: item.scheduledAt,
-              time: formatTime(item.scheduledAt),
-              mode: item.mode,
-              location:
-                item.meetingLink ||
-                (item.mode === "ONLINE" ? "Online meeting" : "Venue not specified"),
-              meetingLink: item.meetingLink,
-              status: item.status,
-              feedback: item.feedback,
-              studentId: item.application.user.id,
-            };
-          });
-
-        setInterviews(mappedInterviews);
-      } catch {
-        if (active) {
-          setError(
-            "Unable to load interviews. Please try again."
-          );
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+      if (active) {
+        setError("Unable to load interviews. Please try again.");
       }
-    };
+    } finally {
+      if (active) {
+        setLoading(false);
+      }
+    }
+  };
 
-    void fetchInterviews();
+  void fetchInterviews();
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
+  return () => {
+    active = false;
+  };
+}, []);
   const filteredInterviews = useMemo(
     () =>
       interviews.filter(
@@ -450,7 +412,9 @@ function Interviews() {
                   />
                 </Box>
 
-                <Typography sx={{ fontWeight: 700, color: "#334155", mb: 2 }}>
+                <Typography
+                  sx={{ fontWeight: 700, color: "#334155", mb: 2 }}
+                >
                   {interview.round}
                 </Typography>
 
@@ -468,7 +432,9 @@ function Interviews() {
                     <AccessTimeRoundedIcon
                       sx={{ color: "#64748B", fontSize: 20 }}
                     />
-                    <Typography variant="body2">{interview.time}</Typography>
+                    <Typography variant="body2">
+                      {interview.time}
+                    </Typography>
                   </Box>
 
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -476,7 +442,10 @@ function Interviews() {
                       sx={{ color: "#64748B", fontSize: 20 }}
                     />
                     <Typography variant="body2">
-                      {interview.mode} · {interview.mode === "ONLINE" ? "Online" : interview.location}
+                      {interview.mode} ·{" "}
+                      {interview.mode === "ONLINE"
+                        ? "Online"
+                        : interview.location}
                     </Typography>
                   </Box>
 

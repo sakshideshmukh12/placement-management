@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
-import axiosInstance from "../api/axiosInstance";
+import { apiClient } from "../api/client";
 import { Formik, Form } from "formik";
 import {
   Alert,
@@ -26,6 +26,7 @@ import FormikTextField from "../components/forms/FormikTextField";
 import FormikSelectField from "../components/forms/FormikSelectField";
 import FormikDateField from "../components/forms/FormikDateField";
 import { interviewValidationSchema } from "../validation/validationSchemas";
+import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 interface Application {
   id: number;
@@ -133,7 +134,7 @@ export default function ManageInterviews() {
     setError("");
 
     try {
-      const response = await axiosInstance.get("/interviews");
+      const response = await apiClient.get(API_ENDPOINTS_V1.INTERVIEWS);
       setInterviews(response.data.data ?? []);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to fetch interviews."));
@@ -146,7 +147,7 @@ export default function ManageInterviews() {
     setLoadingApplications(true);
 
     try {
-      const response = await axiosInstance.get("/applications");
+      const response = await apiClient.get(API_ENDPOINTS_V1.APPLICATIONS);
       setApplications(response.data.data ?? []);
     } catch (err: unknown) {
       setError(
@@ -208,7 +209,7 @@ export default function ManageInterviews() {
     setSuccess("");
 
     try {
-      await axiosInstance.delete(`/interviews/${id}`);
+      await apiClient.delete(`${API_ENDPOINTS_V1.INTERVIEWS}/${id}`);
       setSuccess("Interview deleted successfully.");
       await fetchInterviews();
     } catch (err: unknown) {
@@ -499,13 +500,13 @@ export default function ManageInterviews() {
               }
 
               if (editingId !== null) {
-                await axiosInstance.patch(
-                  `/interviews/${editingId}`,
+                await apiClient.patch(
+                  `${API_ENDPOINTS_V1.INTERVIEWS}/${editingId}`,
                   payload
                 );
                 setSuccess("Interview updated successfully.");
               } else {
-                await axiosInstance.post("/interviews", {
+                await apiClient.post(API_ENDPOINTS_V1.INTERVIEWS, {
                   applicationId: payload.applicationId,
                   round: payload.round,
                   scheduledAt: payload.scheduledAt,

@@ -1,5 +1,6 @@
 
 import { Router } from "express";
+import { UserRole } from "../constants/roles.js";
 
 import {
   addApplication,
@@ -14,27 +15,36 @@ import { validate } from "../middleware/validate.middleware.js";
 import { createApplicationSchema } from "../dtos/application/create-application.dto.js";
 import { updateApplicationSchema } from "../dtos/application/update-application.dto.js";
 import { studentIdSchema } from "../dtos/student/student-id.dto.js";
+import { API_ENDPOINTS_V1 } from "../constants/endpoints.js";
 
 const router = Router();
 
 router.post(
-  "/applications",
+  API_ENDPOINTS_V1.APPLICATIONS.CREATE,
+
   authenticate,
-  authorizeRoles("STUDENT"),
+  authorizeRoles(UserRole.STUDENT),
   validate(createApplicationSchema),
   addApplication,
 );
 
+// Fetch all applications, filtered by the logged-in user's role.
 router.get(
-  "/applications",
+  API_ENDPOINTS_V1.APPLICATIONS.GET_ALL,
   authenticate,
   getApplication,
 );
 
-router.patch(
-  "/applications/:id",
+// Keep the existing single-application endpoint.
+router.get(
+  API_ENDPOINTS_V1.APPLICATIONS.GET,
   authenticate,
-  authorizeRoles("ADMIN", "PLACEMENT_COORDINATOR"),
+  getApplication,
+);
+router.patch(
+  API_ENDPOINTS_V1.APPLICATIONS.UPDATE,
+  authenticate,
+  authorizeRoles(UserRole.PLACEMENT_COORDINATOR, UserRole.ADMIN),
   validate(studentIdSchema, "params"),
   validate(updateApplicationSchema),
   changeApplicationStatus,

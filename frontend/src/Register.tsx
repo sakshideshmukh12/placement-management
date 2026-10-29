@@ -8,7 +8,6 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  InputAdornment,
   Link,
   Paper,
   Typography,
@@ -20,6 +19,10 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 
 import FormikTextField from "./components/forms/FormikTextField";
 import { registerValidationSchema } from "./validation/validationSchemas";
+import FormikSelectField from "./components/forms/FormikSelectField";
+import { apiClient } from "./api/client";
+import { API_ENDPOINTS_V1 } from "./utils/constants";
+import type { AxiosError } from "axios";
 
 type RegisterFormData = {
   name: string;
@@ -67,25 +70,13 @@ export default function Register() {
       year: values.year.trim(),
     };
 
-    try {
-      const response = await fetch(
-        "http://localhost:3000/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
+      try {
+      const response = await apiClient.post<ApiResponse>(
+        API_ENDPOINTS_V1.REGISTER,
+        payload,
       );
 
-      const result: ApiResponse = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || result.error || "Registration failed.",
-        );
-      }
+      const result = response.data;
 
       navigate("/login", {
         replace: true,
@@ -95,12 +86,19 @@ export default function Register() {
         },
       });
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(
-          err.message === "Failed to fetch"
+      const axiosError = err as AxiosError<ApiResponse>;
+
+      if (axiosError.isAxiosError) {
+        const message =
+          axiosError.response?.data?.message ||
+          axiosError.response?.data?.error ||
+          (axiosError.code === "ERR_NETWORK"
             ? "Cannot connect to the server. Please check your connection."
-            : err.message,
-        );
+            : "Registration failed. Please try again.");
+
+        setError(message);
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError("An unexpected error occurred.");
       }
@@ -231,20 +229,32 @@ export default function Register() {
                   placeholder="e.g. CSE2026001"
                 />
 
-                <FormikTextField
+                <FormikSelectField
                   name="branch"
                   label="Branch"
                   required
                   disabled={isSubmitting}
-                  placeholder="e.g. CSE, IT, ENTC"
+                  options={[
+                    { label: "Computer Science (CSE)", value: "CSE" },
+                    { label: "Information Technology (IT)", value: "IT" },
+                    { label: "Electronics and Telecommunications (ENTC)", value: "ENTC" },
+                    { label: "Mechanical Engineering", value: "Mechanical" },
+                    { label: "Civil Engineering", value: "Civil" },
+                    { label: "Electrical Engineering", value: "Electrical" },
+                  ]}
                 />
 
-                <FormikTextField
+                <FormikSelectField
                   name="year"
                   label="Academic Year"
                   required
                   disabled={isSubmitting}
-                  placeholder="e.g. 4th Year"
+                  options={[
+                    { label: "1st Year", value: "1st Year" },
+                    { label: "2nd Year", value: "2nd Year" },
+                    { label: "3rd Year", value: "3rd Year" },
+                    { label: "4th Year", value: "4th Year" },
+                  ]}
                 />
 
                 <Button
@@ -295,4 +305,4 @@ export default function Register() {
       </Paper>
     </Box>
   );
-}
+  }
