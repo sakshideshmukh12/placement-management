@@ -1,5 +1,4 @@
-
-import { useEffect, useMemo, useState,useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -18,7 +17,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import BusinessCenterOutlinedIcon from "@mui/icons-material/BusinessCenterOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type Company = {
@@ -82,11 +81,11 @@ function PlacementDrives() {
       setLoading(true);
       setError("");
 
-      const response = await apiClient.get<PlacementDriveResponse>(
-  API_ENDPOINTS_V1.PLACEMENT_DRIVES
-);
+      const response = await http.get<PlacementDriveResponse>(
+        API_ENDPOINTS_V1.PLACEMENT_DRIVES
+      );
 
-      setDrives(response.data.data);
+      setDrives(response.data);
     } catch (err) {
       console.error("Failed to load placement drives:", err);
       setError("Unable to load placement drives. Please try again.");
@@ -97,10 +96,11 @@ function PlacementDrives() {
 
   const loadMyApplications = async () => {
     try {
-      const response =
-        await apiClient.get<ApplicationsResponse>(API_ENDPOINTS_V1.APPLICATIONS);
+      const response = await http.get<ApplicationsResponse>(
+        API_ENDPOINTS_V1.APPLICATIONS
+      );
 
-      const ids = response.data.data.map(
+      const ids = response.data.map(
         (application) => application.placementDrive.id
       );
 
@@ -111,17 +111,15 @@ function PlacementDrives() {
   };
 
   useEffect(() => {
-  if (hasFetchedRef.current) {
-    return;
-  }
+    if (hasFetchedRef.current) {
+      return;
+    }
 
-  hasFetchedRef.current = true;
+    hasFetchedRef.current = true;
 
-  void loadDrives();
-  void loadMyApplications();
-}, []);
-
-
+    void loadDrives();
+    void loadMyApplications();
+  }, []);
 
   const handleApply = async (driveId: number) => {
     if (applyingDriveId !== null || appliedDriveIds.includes(driveId)) {
@@ -133,7 +131,10 @@ function PlacementDrives() {
       setApplyError("");
       setSuccessMessage("");
 
-      const response = await apiClient.post(API_ENDPOINTS_V1.APPLICATIONS, {
+      const response = await http.post<
+        { message?: string },
+        { placementDriveId: number }
+      >(API_ENDPOINTS_V1.APPLICATIONS, {
         placementDriveId: driveId,
       });
 
@@ -144,7 +145,7 @@ function PlacementDrives() {
       );
 
       setSuccessMessage(
-        response.data?.message || "Application submitted successfully!"
+        response.message || "Application submitted successfully!"
       );
     } catch (err) {
       const apiError = err as ApiError;
@@ -304,8 +305,7 @@ function PlacementDrives() {
           sx={{ mb: 3 }}
           onClose={() => setSuccessMessage("")}
         >
-          {successMessage}
-          {" "}
+          {successMessage}{" "}
           <Button
             size="small"
             color="inherit"

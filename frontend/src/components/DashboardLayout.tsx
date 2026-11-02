@@ -19,15 +19,26 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
         bgcolor: "#F4F7FB",
       }}
     >
-      <Header />
+      {/* Fixed header area */}
+      <Box sx={{ flexShrink: 0 }}>
+        <Header />
+      </Box>
 
-      <Box sx={{ display: { xs: "block", md: "none" }, px: 2, pt: 1 }}>
+      <Box
+        sx={{
+          display: { xs: "block", md: "none" },
+          px: 2,
+          pt: 1,
+          flexShrink: 0,
+        }}
+      >
         <IconButton
           aria-label="Open navigation menu"
           onClick={() => setMobileOpen(true)}
@@ -41,24 +52,43 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         </IconButton>
       </Box>
 
-      <Box sx={{ display: "flex", flex: 1, alignItems: "stretch", minWidth: 0 }}>
+      {/* Dashboard body */}
+      <Box
+        sx={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          overflow: "hidden",
+        }}
+      >
         <SideNav
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
         />
 
+        {/* Only this area scrolls */}
         <Box
           component="main"
           key={location.pathname}
           sx={{
             flex: 1,
             minWidth: 0,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
             py: { xs: 2.5, md: 4 },
             px: { xs: 2, sm: 3, lg: 4 },
             animation: "pageEnter 0.35s ease-out",
             "@keyframes pageEnter": {
-              from: { opacity: 0, transform: "translateY(8px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
+              from: {
+                opacity: 0,
+                transform: "translateY(8px)",
+              },
+              to: {
+                opacity: 1,
+                transform: "translateY(0)",
+              },
             },
           }}
         >
@@ -68,7 +98,10 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         </Box>
       </Box>
 
-      <Footer />
+      {/* Fixed footer area */}
+      <Box sx={{ flexShrink: 0 }}>
+        <Footer />
+      </Box>
     </Box>
   );
 }

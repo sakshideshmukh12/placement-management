@@ -29,6 +29,8 @@ model User {
   branch       String?
   year         String?
 
+ resumeUrl    String?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

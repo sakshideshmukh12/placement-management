@@ -20,7 +20,7 @@ import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import VideocamRoundedIcon from "@mui/icons-material/VideocamRounded";
 
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type InterviewStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
@@ -116,11 +116,11 @@ function Interviews() {
       setError("");
 
       const response =
-        await apiClient.get<ApiResponse>(API_ENDPOINTS_V1.INTERVIEWS);
+        await http.get<ApiResponse>(API_ENDPOINTS_V1.INTERVIEWS);
 
       if (!active) return;
 
-      const mappedInterviews: Interview[] = response.data.data.map(
+      const mappedInterviews: Interview[] = response.data.map(
         (item) => {
           const drive = item.application.placementDrive;
 

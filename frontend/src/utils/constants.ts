@@ -27,4 +27,8 @@ export const API_ENDPOINTS_V1 = {
 
   // Interviews
   INTERVIEWS: "/interviews",
+
+  RESUME_UPLOAD: "/upload",
+RESUME_DOWNLOAD: "/download",
+
 } as const;

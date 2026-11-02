@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { Formik, Form } from "formik";
 import { useNavigate } from "react-router-dom";
-import { apiClient } from "../api/client";
+import {http} from "../api/http";
 import FormikTextField from "../components/forms/FormikTextField";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
@@ -72,7 +72,7 @@ export default function AddCompany() {
                             setSuccess("");
 
                             try {
-                                await apiClient.post(API_ENDPOINTS_V1.COMPANIES, {
+                                await http.post(API_ENDPOINTS_V1.COMPANIES, {
                                     name: values.name.trim(),
                                     website: values.website.trim()
                                         ? /^https?:\/\//i.test(values.website.trim())

@@ -24,8 +24,9 @@ import type {
   GridPaginationModel,
   GridSortModel,
 } from "@mui/x-data-grid";
-import { apiClient } from "../api/client";
+import { http } from "../api//http";
 import ReusableDataGrid from "../components/commmon/ReusableDataGrid";
+import { normalizeApiError } from "../api/apiError";
 
 interface Student {
   id: number;
@@ -131,7 +132,7 @@ export default function ManageApplications() {
 
     try {
       const response =
-        await apiClient.get<ApplicationApiResponse>(
+        await http.get<ApplicationApiResponse>(
           API_ENDPOINTS_V1.APPLICATIONS,
           {
             params: {
@@ -144,10 +145,10 @@ export default function ManageApplications() {
           }
         );
 
-      setApplications(response.data.data);
+      setApplications(response.data);
       setTotalApplications(
-        response.data.pagination?.total ??
-          response.data.data.length
+        response.pagination?.total ??
+          response.data.length
       );
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -180,10 +181,10 @@ export default function ManageApplications() {
     setError("");
 
     try {
-      await apiClient.patch(
-        `${API_ENDPOINTS_V1.APPLICATIONS}/${applicationId}`,
-        { status }
-      );
+     await http.patch(
+  `${API_ENDPOINTS_V1.APPLICATIONS}/${applicationId}`,
+  { status }
+);
 
       setApplications((previous) =>
         previous.map((application) =>
@@ -192,16 +193,11 @@ export default function ManageApplications() {
             : application
         )
       );
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ??
-            "Unable to update application status."
-        );
-      } else {
-        setError("Unable to update application status.");
-      }
-    } finally {
+    }catch (err: unknown) {
+  const apiError = normalizeApiError(err);
+  setError(apiError.message);
+}
+finally {
       setUpdatingId(null);
     }
   };

@@ -19,28 +19,144 @@ import { API_ENDPOINTS_V1 } from "../constants/endpoints.js";
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Applications
+ *   description: Placement application management
+ */
+
+/**
+ * @swagger
+ * /applications:
+ *   post:
+ *     summary: Apply for a placement opportunity
+ *     tags: [Applications]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Request data validated by createApplicationSchema
+ *             properties:
+ *               placementDriveId:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       201:
+ *         description: Application created successfully
+ *       400:
+ *         description: Invalid application data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Only students can apply
+ *       409:
+ *         description: Application already exists or conflicts with existing data
+ */
 router.post(
   API_ENDPOINTS_V1.APPLICATIONS.CREATE,
-
   authenticate,
   authorizeRoles(UserRole.STUDENT),
   validate(createApplicationSchema),
   addApplication,
 );
 
-// Fetch all applications, filtered by the logged-in user's role.
+/**
+ * @swagger
+ * /applications:
+ *   get:
+ *     summary: Get applications based on the logged-in user's role
+ *     tags: [Applications]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Applications retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Access denied
+ */
 router.get(
   API_ENDPOINTS_V1.APPLICATIONS.GET_ALL,
   authenticate,
   getApplication,
 );
 
-// Keep the existing single-application endpoint.
+/**
+ * @swagger
+ * /applications/{id}:
+ *   get:
+ *     summary: Get a specific application
+ *     tags: [Applications]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Application ID
+ *     responses:
+ *       200:
+ *         description: Application retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Application not found
+ */
 router.get(
   API_ENDPOINTS_V1.APPLICATIONS.GET,
   authenticate,
   getApplication,
 );
+
+/**
+ * @swagger
+ * /applications/{id}:
+ *   patch:
+ *     summary: Update an application's status
+ *     tags: [Applications]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Application ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Request data validated by updateApplicationSchema
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [APPLIED, SHORTLISTED, SELECTED, REJECTED]
+ *                 example: SHORTLISTED
+ *     responses:
+ *       200:
+ *         description: Application status updated successfully
+ *       400:
+ *         description: Invalid status or application data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ *       404:
+ *         description: Application not found
+ */
 router.patch(
   API_ENDPOINTS_V1.APPLICATIONS.UPDATE,
   authenticate,

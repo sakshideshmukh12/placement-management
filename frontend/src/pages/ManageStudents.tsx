@@ -1,5 +1,5 @@
+
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 
 import {
   Alert,
@@ -28,7 +28,7 @@ import type {
   GridSortModel,
 } from "@mui/x-data-grid";
 
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import ReusableDataGrid from "../components/commmon/ReusableDataGrid";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
@@ -52,6 +52,11 @@ interface StudentsResponse {
     total: number;
     totalPages: number;
   };
+}
+
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
 }
 
 const avatarColors = [
@@ -86,6 +91,32 @@ const getInitials = (name: string | null | undefined): string => {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error
+  ) {
+    const response = (
+      error as {
+        response?: { data?: ApiErrorResponse };
+      }
+    ).response;
+
+    return (
+      response?.data?.message ||
+      response?.data?.error ||
+      "Unable to load students. Please try again."
+    );
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Unable to load students. Please try again.";
 };
 
 export default function ManageStudents() {
@@ -141,7 +172,7 @@ export default function ManageStudents() {
       const sortOrder =
         currentSort?.sort === "desc" ? "desc" : "asc";
 
-      const response = await apiClient.get<StudentsResponse>(
+      const response = await http.get<StudentsResponse>(
         API_ENDPOINTS_V1.STUDENTS,
         {
           params: {
@@ -156,24 +187,15 @@ export default function ManageStudents() {
         }
       );
 
-      if (!Array.isArray(response.data.data)) {
+      if (!Array.isArray(response.data)) {
         throw new Error("Invalid students response.");
       }
 
-      setStudents(response.data.data);
-      setTotalStudents(response.data.pagination.total);
+      setStudents(response.data);
+      setTotalStudents(response.pagination.total);
     } catch (err: unknown) {
       console.error("Failed to fetch students:", err);
-
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ??
-            "Unable to load students. Please try again."
-        );
-      } else {
-        setError("Unable to load students. Please try again.");
-      }
-
+      setError(getErrorMessage(err));
       setStudents([]);
       setTotalStudents(0);
     } finally {
@@ -264,9 +286,7 @@ export default function ManageStudents() {
                 {student.name?.trim() || "Unnamed Student"}
               </Typography>
 
-              <Typography
-                sx={{ fontSize: 11, color: "#94A3B8" }}
-              >
+              <Typography sx={{ fontSize: 11, color: "#94A3B8" }}>
                 ID: {student.id}
               </Typography>
             </Box>
@@ -333,7 +353,11 @@ export default function ManageStudents() {
           }}
         >
           <MailOutlineRoundedIcon
-            sx={{ fontSize: 17, color: "#94A3B8", flexShrink: 0 }}
+            sx={{
+              fontSize: 17,
+              color: "#94A3B8",
+              flexShrink: 0,
+            }}
           />
 
           <Typography
@@ -558,9 +582,7 @@ export default function ManageStudents() {
           </Button>
         </Box>
 
-        <Typography
-          sx={{ color: "#64748B", fontSize: 12.5, mt: 2 }}
-        >
+        <Typography sx={{ color: "#64748B", fontSize: 12.5, mt: 2 }}>
           {loading
             ? "Loading records..."
             : `Showing ${students.length} records on this page out of ${totalStudents} students`}

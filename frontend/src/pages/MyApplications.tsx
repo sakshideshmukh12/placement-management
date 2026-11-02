@@ -19,8 +19,8 @@ import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 
-import { apiClient } from "../api/client";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
+import { http } from "../api/http";
 
 type ApplicationStatus =
   | "APPLIED"
@@ -29,7 +29,7 @@ type ApplicationStatus =
   | "SELECTED"
   | string;
 
-type Application = {
+interface Application {
   id: number;
   status: ApplicationStatus;
   appliedAt: string;
@@ -49,14 +49,14 @@ type Application = {
       location: string | null;
     };
   };
-};
+}
 
-type ApplicationsResponse = {
+interface ApplicationsResponse {
   message: string;
   data: Application[];
-};
+}
 
-function formatDate(dateValue?: string | null) {
+function formatDate(dateValue?: string | null): string {
   if (!dateValue) {
     return "Not available";
   }
@@ -74,7 +74,7 @@ function formatDate(dateValue?: string | null) {
   });
 }
 
-function formatPackage(value: string | number | null) {
+function formatPackage(value: string | number | null): string {
   if (value === null || value === undefined || value === "") {
     return "Not specified";
   }
@@ -121,45 +121,57 @@ function getStatusStyle(status: string) {
   }
 }
 
+function getErrorMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const apiError = error as {
+      response?: {
+        data?: {
+          message?: string;
+          error?: string;
+        };
+      };
+      message?: string;
+    };
+
+    return (
+      apiError.response?.data?.message ||
+      apiError.response?.data?.error ||
+      apiError.message ||
+      "Unable to load your applications. Please try again."
+    );
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Unable to load your applications. Please try again.";
+}
+
 function MyApplications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchApplications = useCallback(async () => {
+  const fetchApplications = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError("");
 
     try {
-      const response =
-        await apiClient.get<ApplicationsResponse>(API_ENDPOINTS_V1.APPLICATIONS);
+      const response = await http.get<ApplicationsResponse>(
+        API_ENDPOINTS_V1.APPLICATIONS
+      );
 
-      if (Array.isArray(response.data?.data)) {
-        setApplications(response.data.data);
+      if (Array.isArray(response.data)) {
+        setApplications(response.data);
       } else {
         setApplications([]);
-        setError("The server returned an unexpected applications response.");
+        setError(
+          "The server returned an unexpected applications response."
+        );
       }
     } catch (err: unknown) {
-      let message = "Unable to load your applications. Please try again.";
-
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const apiError = err as {
-          response?: {
-            data?: {
-              message?: string;
-            };
-          };
-          message?: string;
-        };
-
-        message =
-          apiError.response?.data?.message ??
-          apiError.message ??
-          message;
-      }
-
-      setError(message);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -586,9 +598,14 @@ function MyApplications() {
                         >
                           Package
                         </Typography>
+
                         <Typography
                           variant="body2"
-                          sx={{ color: "#334155", fontWeight: 700, mt: 0.5 }}
+                          sx={{
+                            color: "#334155",
+                            fontWeight: 700,
+                            mt: 0.5,
+                          }}
                         >
                           {formatPackage(application.placementDrive.package)}
                         </Typography>
@@ -601,9 +618,14 @@ function MyApplications() {
                         >
                           Location
                         </Typography>
+
                         <Typography
                           variant="body2"
-                          sx={{ color: "#334155", fontWeight: 700, mt: 0.5 }}
+                          sx={{
+                            color: "#334155",
+                            fontWeight: 700,
+                            mt: 0.5,
+                          }}
                         >
                           {application.placementDrive.company.location ||
                             "Not specified"}
@@ -617,6 +639,7 @@ function MyApplications() {
                         >
                           Applied on
                         </Typography>
+
                         <Box
                           sx={{
                             display: "flex",
@@ -628,6 +651,7 @@ function MyApplications() {
                           <CalendarMonthRoundedIcon
                             sx={{ fontSize: 17, color: "#64748B" }}
                           />
+
                           <Typography
                             variant="body2"
                             sx={{ color: "#334155", fontWeight: 600 }}
@@ -644,9 +668,14 @@ function MyApplications() {
                         >
                           Application ID
                         </Typography>
+
                         <Typography
                           variant="body2"
-                          sx={{ color: "#334155", fontWeight: 700, mt: 0.5 }}
+                          sx={{
+                            color: "#334155",
+                            fontWeight: 700,
+                            mt: 0.5,
+                          }}
                         >
                           #{application.id}
                         </Typography>
@@ -664,7 +693,8 @@ function MyApplications() {
                       }}
                     >
                       <Typography variant="caption" sx={{ color: "#64748B" }}>
-                        Deadline: {formatDate(application.placementDrive.deadline)}
+                        Deadline:{" "}
+                        {formatDate(application.placementDrive.deadline)}
                       </Typography>
 
                       <Chip

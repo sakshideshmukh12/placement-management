@@ -23,8 +23,29 @@ import { API_ENDPOINTS_V1 } from "../constants/endpoints.js";
 
 const router = Router();
 
-// Placement analytics: ADMIN and PLACEMENT_COORDINATOR
-// Keep this route before "/placement-drives/:id".
+/**
+ * @swagger
+ * tags:
+ *   name: Placement Drives
+ *   description: Placement drive management and analytics
+ */
+
+/**
+ * @swagger
+ * /placement-drives/analytics:
+ *   get:
+ *     summary: Fetch placement analytics
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Placement analytics retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ */
 router.get(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.ANALYTICS,
   authenticate,
@@ -32,13 +53,49 @@ router.get(
   fetchPlacementAnalytics,
 );
 
-// Viewing placement drives: logged-in users
+/**
+ * @swagger
+ * /placement-drives:
+ *   get:
+ *     summary: Get placement drives
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Placement drives retrieved successfully
+ *       401:
+ *         description: Authentication required
+ */
 router.get(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.GET,
   authenticate,
   fetchPlacementDrives,
 );
 
+/**
+ * @swagger
+ * /placement-drives/{id}:
+ *   get:
+ *     summary: Get a placement drive by ID
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Placement drive ID
+ *     responses:
+ *       200:
+ *         description: Placement drive retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: Placement drive not found
+ */
 router.get(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.GET_BY_ID,
   authenticate,
@@ -46,7 +103,31 @@ router.get(
   fetchPlacementDriveById,
 );
 
-// Managing placement drives: ADMIN and PLACEMENT_COORDINATOR
+/**
+ * @swagger
+ * /placement-drives:
+ *   post:
+ *     summary: Create a placement drive
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Request body validated by createPlacementDriveSchema
+ *     responses:
+ *       201:
+ *         description: Placement drive created successfully
+ *       400:
+ *         description: Invalid placement drive data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ */
 router.post(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.CREATE,
   authenticate,
@@ -55,6 +136,40 @@ router.post(
   addPlacementDrive,
 );
 
+/**
+ * @swagger
+ * /placement-drives/{id}:
+ *   put:
+ *     summary: Replace a placement drive
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Placement drive ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Complete request body validated by createPlacementDriveSchema
+ *     responses:
+ *       200:
+ *         description: Placement drive updated successfully
+ *       400:
+ *         description: Invalid placement drive data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ *       404:
+ *         description: Placement drive not found
+ */
 router.put(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.UPDATE,
   authenticate,
@@ -64,6 +179,40 @@ router.put(
   editPlacementDrive,
 );
 
+/**
+ * @swagger
+ * /placement-drives/{id}:
+ *   patch:
+ *     summary: Partially update a placement drive
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Placement drive ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Fields validated by updatePlacementDriveSchema
+ *     responses:
+ *       200:
+ *         description: Placement drive updated successfully
+ *       400:
+ *         description: Invalid placement drive data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ *       404:
+ *         description: Placement drive not found
+ */
 router.patch(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.PATCH,
   authenticate,
@@ -73,6 +222,31 @@ router.patch(
   partiallyUpdatePlacementDrive,
 );
 
+/**
+ * @swagger
+ * /placement-drives/{id}:
+ *   delete:
+ *     summary: Delete a placement drive
+ *     tags: [Placement Drives]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Placement drive ID
+ *     responses:
+ *       200:
+ *         description: Placement drive deleted successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin or placement coordinator access required
+ *       404:
+ *         description: Placement drive not found
+ */
 router.delete(
   API_ENDPOINTS_V1.PLACEMENT_DRIVES.DELETE,
   authenticate,

@@ -1,7 +1,7 @@
-
 import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import { Formik, Form } from "formik";
+import { normalizeApiError } from "../api/apiError";
 import {
   Alert,
   Box,
@@ -69,6 +69,11 @@ interface InterviewFormValues {
   feedback: string;
 }
 
+interface ApiResponse<T> {
+  message: string;
+  data: T;
+}
+
 const emptyForm: InterviewFormValues = {
   applicationId: "",
   round: "",
@@ -81,6 +86,11 @@ const emptyForm: InterviewFormValues = {
 
 const toLocalDateTime = (value: string): string => {
   const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
   const localDate = new Date(
     date.getTime() - date.getTimezoneOffset() * 60000
   );
@@ -88,34 +98,27 @@ const toLocalDateTime = (value: string): string => {
   return localDate.toISOString().slice(0, 16);
 };
 
-const formatDate = (value: string): string =>
-  new Date(value).toLocaleString();
+const formatDate = (value: string): string => {
+  const date = new Date(value);
 
-const getErrorMessage = (err: unknown, fallback: string): string => {
-  if (typeof err === "object" && err !== null && "response" in err) {
-    const response = err.response;
-
-    if (
-      typeof response === "object" &&
-      response !== null &&
-      "data" in response
-    ) {
-      const data = response.data;
-
-      if (
-        typeof data === "object" &&
-        data !== null &&
-        "message" in data &&
-        typeof data.message === "string"
-      ) {
-        return data.message;
-      }
-    }
+  if (Number.isNaN(date.getTime())) {
+    return "Invalid date";
   }
 
-  return fallback;
+  return date.toLocaleString();
+};
+const getErrorMessage = (err: unknown, fallback: string): string => {
+  const apiError = normalizeApiError(err);
+
+  if (apiError.message === "An unexpected error occurred. Please try again.") {
+    return fallback;
+  }
+
+  return apiError.message;
 };
 
+
+ 
 export default function ManageInterviews() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -129,30 +132,46 @@ export default function ManageInterviews() {
     ...emptyForm,
   });
 
+  // Fetch interviews from GET /interviews
   const fetchInterviews = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await apiClient.get(API_ENDPOINTS_V1.INTERVIEWS);
-      setInterviews(response.data.data ?? []);
+      const response = await http.get<ApiResponse<Interview[]>>(
+        API_ENDPOINTS_V1.INTERVIEWS
+      );
+
+      const interviewData = response.data;
+
+      setInterviews(Array.isArray(interviewData) ? interviewData : []);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to fetch interviews."));
+      setInterviews([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Fetch applications for the Schedule Interview form
   const fetchApplications = useCallback(async () => {
     setLoadingApplications(true);
 
     try {
-      const response = await apiClient.get(API_ENDPOINTS_V1.APPLICATIONS);
-      setApplications(response.data.data ?? []);
+      const response = await http.get<ApiResponse<Application[]>>(
+        API_ENDPOINTS_V1.APPLICATIONS
+      );
+
+      const applicationData = response.data;
+
+      setApplications(
+        Array.isArray(applicationData) ? applicationData : []
+      );
     } catch (err: unknown) {
       setError(
         getErrorMessage(err, "Failed to fetch applications for scheduling.")
       );
+      setApplications([]);
     } finally {
       setLoadingApplications(false);
     }
@@ -203,13 +222,16 @@ export default function ManageInterviews() {
       "Are you sure you want to delete this interview?"
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     setError("");
     setSuccess("");
 
     try {
-      await apiClient.delete(`${API_ENDPOINTS_V1.INTERVIEWS}/${id}`);
+      await http.delete(`${API_ENDPOINTS_V1.INTERVIEWS}/${id}`);
+
       setSuccess("Interview deleted successfully.");
       await fetchInterviews();
     } catch (err: unknown) {
@@ -227,7 +249,9 @@ export default function ManageInterviews() {
 
   const applicationOptions = applications.map((application) => {
     const studentName =
-      application.user?.name || application.user?.email || "Unknown student";
+      application.user?.name ||
+      application.user?.email ||
+      "Unknown student";
 
     const companyName =
       application.placementDrive?.company?.name || "Unknown company";
@@ -481,7 +505,9 @@ export default function ManageInterviews() {
               const scheduledDate = new Date(values.scheduledAt);
 
               if (Number.isNaN(scheduledDate.getTime())) {
-                throw new Error("Please select a valid interview date and time.");
+                throw new Error(
+                  "Please select a valid interview date and time."
+                );
               }
 
               const payload = {
@@ -500,30 +526,31 @@ export default function ManageInterviews() {
               }
 
               if (editingId !== null) {
-                await apiClient.patch(
+                await http.patch(
                   `${API_ENDPOINTS_V1.INTERVIEWS}/${editingId}`,
                   payload
                 );
+
                 setSuccess("Interview updated successfully.");
               } else {
-                await apiClient.post(API_ENDPOINTS_V1.INTERVIEWS, {
+                await http.post(API_ENDPOINTS_V1.INTERVIEWS, {
                   applicationId: payload.applicationId,
                   round: payload.round,
                   scheduledAt: payload.scheduledAt,
                   mode: payload.mode,
                   meetingLink: payload.meetingLink,
                 });
+
                 setSuccess("Interview scheduled successfully.");
               }
 
               setDialogOpen(false);
               setEditingId(null);
               setForm({ ...emptyForm });
+
               await fetchInterviews();
             } catch (err: unknown) {
-              setError(
-                getErrorMessage(err, "Failed to save the interview.")
-              );
+              setError(getErrorMessage(err, "Failed to save the interview."));
             } finally {
               setSubmitting(false);
             }

@@ -1,4 +1,3 @@
-
 import { rateLimit } from "express-rate-limit";
 
 const rateLimiter = rateLimit({
@@ -7,6 +6,7 @@ const rateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
+    status: 429,
     message: "Too many requests. Please try again later.",
   },
 });

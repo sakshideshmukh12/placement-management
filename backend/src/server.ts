@@ -4,6 +4,10 @@ import helmet from "helmet";
 import loggerMiddleware from "./middleware/logger.middleware.js";
 import routes from "./routes/routes.js";
 import rateLimiter from "./middleware/rateLimiter.middleware.js";
+import errorMiddleware from "./middleware/error.middleware.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.js";
+
 
 const app = express();
 
@@ -17,11 +21,16 @@ app.use(
 
 app.use(express.json({ limit: "100kb" }));
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
 app.use(loggerMiddleware);
 
 app.use(rateLimiter);
 
 app.use(routes);
+
+app.use(errorMiddleware);
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");

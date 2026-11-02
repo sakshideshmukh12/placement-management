@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -21,8 +20,8 @@ import {
   Pie,
   Cell,
   Legend,
-} from "recharts"
-import { apiClient } from "../api/client";
+} from "recharts";
+import { http } from "../api/http";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 interface AnalyticsData {
@@ -78,12 +77,12 @@ function PlacementAnalytics() {
         setLoading(true);
         setError("");
 
-       const response = await apiClient.get<AnalyticsResponse>(
-      API_ENDPOINTS_V1.PLACEMENT_DRIVES_ANALYTICS
-);
+        const response = await http.get<AnalyticsResponse>(
+          API_ENDPOINTS_V1.PLACEMENT_DRIVES_ANALYTICS
+        );
 
         if (isMounted) {
-          setAnalytics(response.data.data);
+          setAnalytics(response.data);
         }
       } catch {
         if (isMounted) {

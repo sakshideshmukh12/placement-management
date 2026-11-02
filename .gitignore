@@ -66,3 +66,14 @@ Thumbs.db
 
 backend/src/generated/prisma/
 '@ | Set-Content -Encoding utf8 .gitignore
+
+# Uploaded resumes and test files
+backend/uploads/
+backend/fake-resume.pdf
+backend/large-resume.pdf
+
+# Local notes
+frontend/profile-code.txt
+
+# Generated Prisma client
+backend/src/generated/prisma/

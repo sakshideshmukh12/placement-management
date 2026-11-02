@@ -2,7 +2,7 @@ export const API_ENDPOINTS_V1 = {
   AUTH: {
     REGISTER: "/auth/register",
     LOGIN: "/auth/login",
-    PROFILE: "/me",
+    PROFILE: "/auth/me",
   },
 APPLICATIONS: {
   CREATE: "/applications",

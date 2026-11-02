@@ -16,7 +16,7 @@ import {
   TextField,
 } from "@mui/material";
 import { Formik, Form } from "formik";
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import FormikTextField from "../components/forms/FormikTextField";
 import FormikSelectField from "../components/forms/FormikSelectField";
 import FormikDateField from "../components/forms/FormikDateField";
@@ -75,12 +75,16 @@ export default function ManagePlacementDrives() {
 
     try {
       const [driveRes, companyRes] = await Promise.all([
-        apiClient.get<ApiResponse<Drive[]>>(API_ENDPOINTS_V1.PLACEMENT_DRIVES),
-        apiClient.get<ApiResponse<Company[]>>(API_ENDPOINTS_V1.COMPANIES),
+        http.get<ApiResponse<Drive[]>>(
+          API_ENDPOINTS_V1.PLACEMENT_DRIVES
+        ),
+        http.get<ApiResponse<Company[]>>(
+          API_ENDPOINTS_V1.COMPANIES
+        ),
       ]);
 
-      setDrives(driveRes.data.data);
-      setCompanies(companyRes.data.data);
+      setDrives(driveRes.data);
+      setCompanies(companyRes.data);
     } catch (err) {
       const e = err as {
         response?: { data?: { message?: string } };
@@ -88,7 +92,9 @@ export default function ManagePlacementDrives() {
       };
 
       setError(
-        e.response?.data?.message || e.message || "Failed to load data."
+        e.response?.data?.message ||
+          e.message ||
+          "Failed to load data."
       );
     } finally {
       setLoading(false);
@@ -105,6 +111,7 @@ export default function ManagePlacementDrives() {
 
     if (drive) {
       const date = new Date(drive.deadline);
+
       const deadline = [
         date.getFullYear(),
         String(date.getMonth() + 1).padStart(2, "0"),
@@ -133,7 +140,10 @@ export default function ManagePlacementDrives() {
     setError("");
 
     try {
-      await apiClient.delete(`${API_ENDPOINTS_V1.PLACEMENT_DRIVES}/${id}`); 
+      await http.delete(
+        `${API_ENDPOINTS_V1.PLACEMENT_DRIVES}/${id}`
+      );
+
       await loadData();
     } catch (err) {
       const e = err as {
@@ -142,7 +152,9 @@ export default function ManagePlacementDrives() {
       };
 
       setError(
-        e.response?.data?.message || e.message || "Failed to delete drive."
+        e.response?.data?.message ||
+          e.message ||
+          "Failed to delete drive."
       );
     }
   };
@@ -150,7 +162,9 @@ export default function ManagePlacementDrives() {
   const filteredDrives = drives.filter(
     (drive) =>
       drive.role.toLowerCase().includes(search.toLowerCase()) ||
-      (drive.company?.name ?? "").toLowerCase().includes(search.toLowerCase())
+      (drive.company?.name ?? "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
   );
 
   return (
@@ -244,8 +258,9 @@ export default function ManagePlacementDrives() {
             </Box>
 
             <Chip
-              label={`${filteredDrives.length} ${filteredDrives.length === 1 ? "Drive" : "Drives"
-                }`}
+              label={`${filteredDrives.length} ${
+                filteredDrives.length === 1 ? "Drive" : "Drives"
+              }`}
               sx={{
                 bgcolor: "#e8f0fe",
                 color: "#1d4f91",
@@ -554,12 +569,15 @@ export default function ManagePlacementDrives() {
               };
 
               if (editingId !== null) {
-                  await apiClient.put(
+                await http.put(
                   `${API_ENDPOINTS_V1.PLACEMENT_DRIVES}/${editingId}`,
                   payload
                 );
               } else {
-                await apiClient.post(API_ENDPOINTS_V1.PLACEMENT_DRIVES, payload);
+                await http.post(
+                  API_ENDPOINTS_V1.PLACEMENT_DRIVES,
+                  payload
+                );
               }
 
               setOpen(false);
@@ -572,8 +590,8 @@ export default function ManagePlacementDrives() {
 
               setError(
                 e.response?.data?.message ||
-                e.message ||
-                "Failed to save drive."
+                  e.message ||
+                  "Failed to save drive."
               );
             } finally {
               setSubmitting(false);

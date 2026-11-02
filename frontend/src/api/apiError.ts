@@ -1,4 +1,3 @@
-
 import axios from "axios";
 
 export interface ApiError {
@@ -31,7 +30,10 @@ export function normalizeApiError(error: unknown): ApiError {
       };
     }
 
-    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+    if (
+      error.code === "ECONNABORTED" ||
+      error.code === "ETIMEDOUT"
+    ) {
       return {
         message: "The request timed out. Please try again.",
         code: error.code,
@@ -40,7 +42,8 @@ export function normalizeApiError(error: unknown): ApiError {
 
     if (error.request) {
       return {
-        message: "Cannot connect to the server. Please check your connection.",
+        message:
+          "Cannot connect to the server. Please check your connection.",
         code: error.code,
       };
     }

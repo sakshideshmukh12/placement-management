@@ -22,7 +22,7 @@ import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../app/hooks";
-import { apiClient } from "../api/client";
+import { http } from "../api/http";
 import { API_ENDPOINTS_V1 } from "../utils/constants";
 
 type DashboardSummary = {
@@ -58,11 +58,11 @@ function DashboardHome() {
 
     try {
       const response =
-        await apiClient.get<DashboardSummaryResponse>(
+        await http.get<DashboardSummaryResponse>(
           API_ENDPOINTS_V1.DASHBOARD.SUMMARY
         );
 
-      const summary = response.data.data;
+      const summary = response.data;
 
       setDriveCount(summary.driveCount);
       setApplicationCount(summary.applicationCount);

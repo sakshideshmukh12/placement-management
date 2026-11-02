@@ -1,5 +1,6 @@
 
 import type { Request, Response, NextFunction } from "express";
+import { toUTCDate } from "../utils/luxonHelpers.js";
 
 import {
   createInterview,
@@ -23,7 +24,18 @@ export const addInterview = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const interview = await createInterview(req.body);
+
+    const scheduledAt = toUTCDate(req.body.scheduledAt);
+
+    if (!scheduledAt) {
+      res.status(400).json({
+        message: "Invalid scheduled date. Provide an ISO timestamp with timezone.",
+      });
+      return;
+    }
+
+
+    const interview = await createInterview({ ...req.body, scheduledAt });
 
     res.status(201).json({
       message: "Interview scheduled successfully",
@@ -55,8 +67,8 @@ export const getAllInterviews = async (
         ? interviews
         : auth.role === "STUDENT"
           ? interviews.filter(
-              (interview) => interview.application.user.id === auth.id,
-            )
+            (interview) => interview.application.user.id === auth.id,
+          )
           : [];
 
     if (
@@ -133,7 +145,19 @@ export const updateInterviewDetails = async (
 ): Promise<void> => {
   try {
     const id = Number(req.params.id);
-    const interview = await updateInterview(id, req.body);
+    const scheduledAt = toUTCDate(req.body.scheduledAt);
+
+    if (!scheduledAt) {
+      res.status(400).json({
+        message: "Invalid scheduled date. Provide an ISO timestamp with timezone.",
+      });
+      return;
+    }
+
+    const interview = await updateInterview(id, {
+      ...req.body,
+      scheduledAt,
+    });
 
     res.status(200).json({
       message: "Interview updated successfully",
@@ -152,7 +176,23 @@ export const patchInterviewDetails = async (
 ): Promise<void> => {
   try {
     const id = Number(req.params.id);
-    const interview = await patchInterview(id, req.body);
+    const updateData = { ...req.body };
+
+    if (updateData.scheduledAt !== undefined) {
+      const scheduledAt = toUTCDate(updateData.scheduledAt);
+
+      if (!scheduledAt) {
+        res.status(400).json({
+          message: "Invalid scheduled date. Provide an ISO timestamp with timezone.",
+        });
+        return;
+      }
+
+      updateData.scheduledAt = scheduledAt;
+    }
+
+    const interview = await patchInterview(id, updateData);
+
 
     res.status(200).json({
       message: "Interview updated successfully",
