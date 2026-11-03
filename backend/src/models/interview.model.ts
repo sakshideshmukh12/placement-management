@@ -19,6 +19,23 @@ export const createInterview = async (data: {
         meetingLink: data.meetingLink,
       }),
     },
+    include: {
+      application: {
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+          placementDrive: {
+            include: {
+              company: true,
+            },
+          },
+        },
+      },
+    },
   });
 };
 

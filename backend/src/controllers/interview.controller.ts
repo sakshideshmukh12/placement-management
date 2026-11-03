@@ -1,6 +1,7 @@
 
 import type { Request, Response, NextFunction } from "express";
 import { toUTCDate } from "../utils/luxonHelpers.js";
+import { sendEmail } from "../services/email.service.js";
 
 import {
   createInterview,
@@ -36,6 +37,35 @@ export const addInterview = async (
 
 
     const interview = await createInterview({ ...req.body, scheduledAt });
+
+    try {
+  const student = interview.application.user;
+  const drive = interview.application.placementDrive;
+
+  await sendEmail(
+    student.email,
+    "PlaceTrack - Interview Scheduled",
+    `Hello ${student.name || "Student"},
+
+Your interview has been scheduled successfully.
+
+Company: ${drive.company.name}
+Role: ${drive.company.name}
+Round: ${interview.round}
+Date and Time: ${interview.scheduledAt.toLocaleString()}
+${interview.mode ? `Mode: ${interview.mode}` : ""}
+${interview.meetingLink ? `Meeting Link: ${interview.meetingLink}` : ""}
+
+Please be prepared for your interview.
+
+Regards,
+PlaceTrack Placement Team`
+  );
+} catch (emailError) {
+  console.error("Failed to send interview email:", emailError);
+}
+
+
 
     res.status(201).json({
       message: "Interview scheduled successfully",

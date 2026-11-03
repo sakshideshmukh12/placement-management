@@ -18,12 +18,12 @@ import { studentIdSchema } from "../dtos/student/student-id.dto.js";
 import { API_ENDPOINTS_V1 } from "../constants/endpoints.js";
 
 const router = Router();
-
-/**
+  /**
  * @swagger
- * tags:
- *   name: Applications
- *   description: Placement application management
+ * /applications:
+ *   post:
+ *     summary: Apply for a placement opportunity
+ *     tags: [Applications]
  */
 
 /**

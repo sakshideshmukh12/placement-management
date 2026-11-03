@@ -1,6 +1,8 @@
 
 import type { Request, Response, NextFunction } from "express";
 import type { ApplicationStatus } from "../generated/prisma/client.js";
+import { createNotification } from "../models/notification.model.js";
+
 
 import {
   createApplication,
@@ -239,6 +241,12 @@ export const changeApplicationStatus = async (
       });
       return;
     }
+
+    await createNotification({
+  userId: application.id,
+  title: "Application Status Updated",
+  message: `Your application status has been updated to ${application.status}.`,
+});
 
     res.status(200).json({
       statusCode: 200,

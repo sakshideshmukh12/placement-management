@@ -5,7 +5,7 @@ import resumeUpload from "../middleware/resumeUpload.js";
 import {
   uploadResume,
   downloadResume,
-} from "../controllers/resumeController.js";
+} from "../controllers/resume.controller.js";
 import { authorizeRoles } from "../middleware/authorize.middleware.js";
 
 const router = Router();

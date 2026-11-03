@@ -1,6 +1,7 @@
 import { Prisma } from "../generated/prisma/client.js";
 import prisma from "../prisma.js";
 import type { ApplicationStatus } from "../generated/prisma/client.js";
+import { createNotification } from "./notification.model.js";
 
 export const createApplication = async (
   userId: number,
@@ -121,15 +122,48 @@ export const getApplications = async (
   };
 };
 
+
+
 export const updateApplicationStatus = async (
   id: number,
   status: ApplicationStatus,
 ) => {
-  return await prisma.application.update({
+  const application = await prisma.application.findUnique({
+    where: { id },
+    include: {
+      placementDrive: {
+        select: {
+          role: true,
+          company: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!application) {
+    throw new Error("Application not found");
+  }
+
+  const updatedApplication = await prisma.application.update({
     where: { id },
     data: { status },
   });
+
+  if (application.status !== status) {
+    await createNotification({
+      userId: application.userId,
+      title: `Application ${status === "SHORTLISTED" ? "Shortlisted" : "Status Updated"}`,
+      message: `Your application for ${application.placementDrive.role} at ${application.placementDrive.company.name} has been ${status.toLowerCase()}.`,
+    });
+  }
+
+  return updatedApplication;
 };
+
 
 export const findEligiblePlacementDrive = async (placementDriveId: number) => {
   const drive = await prisma.placementDrive.findUnique({

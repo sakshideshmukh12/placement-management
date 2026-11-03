@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import type { ReactNode } from "react";
+import Notifications from "./pages/Notification";
 
 import Login from "./Login";
 import Register from "./Register";
@@ -325,6 +326,20 @@ function App() {
             </RequireAuth>
           }
         />
+
+        {/* Student notifications */}
+<Route
+  path="/notifications"
+  element={
+    <RequireAuth>
+      <RequireRole allowedRole="STUDENT">
+        <DashboardLayout>
+          <Notifications />
+        </DashboardLayout>
+      </RequireRole>
+    </RequireAuth>
+  }
+/>
 
         {/* Admin dashboard */}
         <Route

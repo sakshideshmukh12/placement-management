@@ -9,6 +9,9 @@ import {
   Typography,
 } from "@mui/material";
 
+import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
+
+
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import WorkOutlineRoundedIcon from "@mui/icons-material/WorkOutlineRounded";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
@@ -150,6 +153,11 @@ function SideNav({
             path: "/profile",
             icon: <PeopleOutlineRoundedIcon />,
           },
+          {
+  label: "Notifications",
+  path: "/notifications",
+  icon: <NotificationsNoneRoundedIcon />,
+},
         ];
 
   const portalTitle = isAdmin
